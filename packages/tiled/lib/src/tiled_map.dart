@@ -286,7 +286,7 @@ class TiledMap {
     );
   }
 
-  factory TiledMap.parse(Parser parser, {List<TsxProvider>? tsxList}) {
+  factory TiledMap.parse(Parser parser, {List<TsxProviderBase>? tsxList}) {
     final backgroundColorHex = parser.getStringOrNull('backgroundcolor');
     final backgroundColor = parser.getColorOrNull('backgroundcolor');
     final compressionLevel = parser.getInt('compressionlevel', defaults: -1);
@@ -317,7 +317,7 @@ class TiledMap {
           return Tileset.parse(tilesetData);
         }
         final matchingTsx = tsxList.where(
-          (tsx) => tsx.filename == tilesetSource,
+          (tsx) => tsx.checkProvidable(tilesetSource),
         );
 
         return Tileset.parse(
