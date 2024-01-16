@@ -253,7 +253,7 @@ void main() {
       return File('./test/fixtures/map_images.tmx').readAsString().then((xml) {
         map = TiledMap.parseTmx(
           xml,
-          tsxProviders: [FixtureTsxProvider.all('./test/fixtures')],
+          tsxProviders: [FixtureTsxProvider.all()],
         );
       });
     });
@@ -314,7 +314,7 @@ void main() {
           .then((xml) {
         final map = TiledMap.parseTmx(
           xml,
-          tsxProviders: [FixtureTsxProvider.all('./test/fixtures')],
+          tsxProviders: [FixtureTsxProvider.all()],
         );
         expect(map.tilesets[0].tileCount, 137);
         final tile = map.tileByGid(1)!;
@@ -329,7 +329,7 @@ void main() {
       return File('./test/fixtures/map_images.tmx').readAsString().then((xml) {
         map = TiledMap.parseTmx(
           xml,
-          tsxProviders: [FixtureTsxProvider.all('./test/fixtures')],
+          tsxProviders: [FixtureTsxProvider.all()],
         );
         expect(
           map.tilesetByName('external').image!.source,
@@ -344,7 +344,7 @@ void main() {
       return File('./test/fixtures/map_images.tmx').readAsString().then((xml) {
         map = TiledMap.parseTmx(
           xml,
-          tsxProviders: [FixtureTsxProvider.all('./test/fixtures')],
+          tsxProviders: [FixtureTsxProvider.all()],
         );
         expect(map.layers.length, equals(2));
       });
@@ -359,7 +359,7 @@ void main() {
           .then((xml) {
         map = TiledMap.parseTmx(
           xml,
-          tsxProviders: [FixtureTsxProvider.all('./test/fixtures')],
+          tsxProviders: [FixtureTsxProvider.all()],
         );
         return;
       });
@@ -432,7 +432,7 @@ class FixtureTsxProvider extends ParserProvider {
 
   FixtureTsxProvider(this.root, this.files);
 
-  factory FixtureTsxProvider.all(String directory) {
+  factory FixtureTsxProvider.all([String directory = './test/fixtures']) {
     final dir = Directory(directory);
     if (!dir.existsSync()) {
       throw '[FixtureTsxProvider] Supplied directory does not exist!';
@@ -445,27 +445,22 @@ class FixtureTsxProvider extends ParserProvider {
         .map((e) => paths.basename(e.path))
         .toList();
 
-    return FixtureTsxProvider(directory, names);
-  }
-
-  factory FixtureTsxProvider.file(String path) {
-    final file = File(path);
-    if (!file.existsSync()) {
-      throw '[FixtureTsxProvider] Supplied path does not match any file!';
-    }
-
-    return FixtureTsxProvider(paths.dirname(path), [paths.basename(path)]);
+    return FixtureTsxProvider(paths.absolute(directory), names);
   }
 
   final Map<String, String> cache = {};
 
   @override
-  bool canProvide(String filename) => true;
+  bool canProvide(String filename) {
+    return files.contains(filename);
+  }
 
   @override
-  Parser? getCachedSource(String filename) => cache.containsKey(filename)
-      ? XmlParser.fromString(cache[filename]!)
-      : null;
+  Parser? getCachedSource(String filename) {
+    return cache.containsKey(filename)
+        ? XmlParser.fromString(cache[filename]!)
+        : null;
+  }
 
   @override
   Parser getSource(String filename) {
