@@ -103,7 +103,7 @@ class Tileset {
     tileCount = this.tiles.length;
   }
 
-  factory Tileset.parse(Parser parser, {TsxProviderBase? tsx}) {
+  factory Tileset.parse(Parser parser, {ParserProvider? tsx}) {
     final backgroundColor = parser.getStringOrNull('backgroundcolor');
     final columns = parser.getIntOrNull('columns');
     final firstGid = parser.getIntOrNull('firstgid');
@@ -169,10 +169,10 @@ class Tileset {
     return result;
   }
 
-  void _checkIfExternalTsx(String? source, TsxProviderBase? tsx) {
+  void _checkIfExternalTsx(String? source, ParserProvider? tsx) {
     if (tsx != null && source != null) {
       final tileset = Tileset.parse(
-        tsx.getCachedSourceBase(source) ?? tsx.getSourceBase(source),
+        tsx.getCachedSource(source) ?? tsx.getSource(source),
       );
       // Copy attributes if not null
       backgroundColor = tileset.backgroundColor ?? backgroundColor;
