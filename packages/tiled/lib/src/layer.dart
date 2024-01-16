@@ -112,7 +112,7 @@ abstract class Layer with Exportable {
     this.properties = CustomProperties.empty,
   });
 
-  static Layer parse(Parser parser) {
+  static Layer parse(Parser parser, {List<ParserProvider>? templateProviders}) {
     final type = parser.formatSpecificParsing(
       (json) => json.getLayerType('type'),
       (xml) => LayerTypeExtension.parseFromTmx(xml.element.name.toString()),
@@ -272,7 +272,10 @@ abstract class Layer with Exportable {
 
   static List<Layer> parseLayers(Parser parser) {
     return parser.formatSpecificParsing(
-      (json) => json.getChildrenAs('layers', Layer.parse),
+      (json) => json.getChildrenAs(
+        'layers',
+        Layer.parse,
+      ),
       (xml) {
         // It's very important not change the order of the layers
         // during parsing!

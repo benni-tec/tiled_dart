@@ -125,28 +125,31 @@ class TiledMap with Exportable {
   /// the [TsxProvider]s returned from the [tsxProviderFunction].
   /// The [tsxProviderFunction] is most commonly your static [TsxProvider.parse]
   /// implementation.
-  static Future<TiledMap> fromString(
-    String contents,
-    Future<TsxProvider> Function(String key) tsxProviderFunction,
-  ) async {
-    final tsxSourcePaths = XmlDocument.parse(contents)
-        .rootElement
-        .children
-        .whereType<XmlElement>()
-        .where((element) => element.name.local == 'tileset')
-        .map((e) => e.getAttribute('source'));
-
-    final tsxProviders = await Future.wait(
-      tsxSourcePaths
-          .where((key) => key != null)
-          .map((key) async => tsxProviderFunction(key!)),
-    );
-
-    return TileMapParser.parseTmx(
-      contents,
-      tsxList: tsxProviders.isEmpty ? null : tsxProviders,
-    );
-  }
+  // TODO: why is this here? same as parseTmx???
+  // static Future<TiledMap> fromString(
+  //   String contents, {
+  //   List<ParserProvider>? tsxProviders,
+  //   List<ParserProvider>? templateProviders,
+  //   List<ImagePathProvider>? imageProviders,
+  // }) async {
+  //   final tsxSourcePaths = XmlDocument.parse(contents)
+  //       .rootElement
+  //       .children
+  //       .whereType<XmlElement>()
+  //       .where((element) => element.name.local == 'tileset')
+  //       .map((e) => e.getAttribute('source'));
+  //
+  //   final tsxProviders = await Future.wait(
+  //     tsxSourcePaths
+  //         .where((key) => key != null)
+  //         .map((key) async => tsxProviderFunction(key!)),
+  //   );
+  //
+  //   return TileMapParser.parseTmx(
+  //     contents,
+  //     tsxList: tsxProviders.isEmpty ? null : tsxProviders,
+  //   );
+  // }
 
   // Convenience Methods
   Tile? tileByGid(int tileGid) {
@@ -286,7 +289,41 @@ class TiledMap with Exportable {
     );
   }
 
-  factory TiledMap.parse(Parser parser, {List<TsxProvider>? tsxList}) {
+  static TiledMap parseJson(
+    String json, {
+    List<ParserProvider>? tsxProviders,
+    List<ParserProvider>? templateProviders,
+  }) {
+    final parser = JsonParser(
+      jsonDecode(json) as Map<String, dynamic>,
+      templateProviders: templateProviders,
+      tsxProviders: tsxProviders,
+    );
+    return TiledMap.parse(parser);
+  }
+
+  /// Parses the provided map xml.
+  ///
+  /// Accepts an optional list of external TsxProviders for external tilesets
+  /// referenced in the map file.
+  factory TiledMap.parseTmx(
+    String xml, {
+    List<ParserProvider>? tsxProviders,
+    List<ParserProvider>? templateProviders,
+  }) {
+    final xmlElement = XmlDocument.parse(xml).rootElement;
+    if (xmlElement.name.local != 'map') {
+      throw 'XML is not in TMX format';
+    }
+    final parser = XmlParser(
+      xmlElement,
+      tsxProviders: tsxProviders,
+      templateProviders: templateProviders,
+    );
+    return TiledMap.parse(parser);
+  }
+
+  factory TiledMap.parse(Parser parser) {
     final backgroundColorHex = parser.getStringOrNull('backgroundcolor');
     final backgroundColor = parser.getColorOrNull('backgroundcolor');
     final compressionLevel = parser.getInt('compressionlevel', defaults: -1);
@@ -313,11 +350,12 @@ class TiledMap with Exportable {
       'tileset',
       (tilesetData) {
         final tilesetSource = tilesetData.getStringOrNull('source');
-        if (tilesetSource == null || tsxList == null) {
+        if (tilesetSource == null || parser.tsxProviders == null) {
           return Tileset.parse(tilesetData);
         }
-        final matchingTsx = tsxList.where(
-          (tsx) => tsx.filename == tilesetSource,
+
+        final matchingTsx = parser.tsxProviders!.where(
+          (tsx) => tsx.canProvide(tilesetSource),
         );
 
         return Tileset.parse(
