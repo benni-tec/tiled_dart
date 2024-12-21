@@ -37,7 +37,7 @@ class Property<T> {
       case PropertyType.color:
         return ColorProperty(
           name: name,
-          value: parser.getColor('value', defaults: ColorData.hex(0x00000000)),
+          value: parser.getColor('value', defaults: const ColorData.hex(0x00000000)),
           hexValue: parser.getString('value', defaults: '#00000000'),
         );
 
